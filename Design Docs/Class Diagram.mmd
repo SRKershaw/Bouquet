@@ -1,0 +1,124 @@
+classDiagram
+    %% Core Portfolio Structure
+    class Portfolio {
+        +String portfolioId
+        +String name
+        +Enum type   // Active, Scenario
+        +Date baseDate
+        +Decimal snapshotValue
+    }
+
+    class Account {
+        +String accountId
+        +String name
+        +Enum type   // Current, Deposit, Trading, ISA, SIPP, Property
+        +Decimal balance
+    }
+
+    class Institution {
+        +String institutionId
+        +String name
+        +Enum type   // Bank, Brokerage, Property
+    }
+
+    class User {
+        +String userId
+        +String name
+        +Date dateOfBirth
+        +String email
+    }
+
+    class Asset {
+        +String assetId
+        +String name
+        +Enum class  // Cash, Bond, Equity, Fund, Property
+        +String yfinanceTicker
+        +Decimal currentPriceUKP
+    }
+
+    class Holding {
+        +String holdingId
+        +Decimal units
+        +Decimal costBasis
+        +Decimal totalReturnGBP
+    }
+
+    class Position {
+        +String positionId
+        +Decimal totalUnits
+        +Decimal costBasis
+    }
+
+    class Bucket {
+        +String bucketId
+        +String name
+        +Decimal balance
+    }
+
+    class Release {
+        +String releaseId
+        +Decimal cashAmount
+        +Date releaseDate
+        +Enum status // Disposed, Undisposed
+    }
+
+    class Transaction {
+        +String transactionId
+        +Date date
+        +Enum type  // Purchase, Sale, Transfer, Dividend, etc.
+        +Decimal amount
+    }
+
+    class Budget {
+        +String budgetId
+        +String name
+        +Enum type   // Recurrent, Itemised
+        +Decimal amount
+    }
+
+    class BudgetedItem {
+        +String itemId
+        +String name
+        +Decimal amount
+        +Date startDate
+        +Date endDate
+    }
+
+    class Income {
+        +String incomeId
+        +String name
+        +Enum sourceType // Pension, Rental, etc.
+        +Decimal amount
+    }
+
+    class Rule {
+        +String ruleId
+        +Enum type // Guardrail, SIPP_Crystallization, etc.
+    }
+
+    %% Relationships
+    Portfolio "1" --> "*" Account
+    Portfolio "1" --> "*" Bucket
+    Portfolio "1" --> "*" Rule
+
+    User "*" -- "*" Account : owns
+    Institution "1" --> "*" Account : provides
+
+    Account "1" --> "*" Holding
+    Asset "*" --> "*" Holding
+    Holding "*" --> "0..1" Bucket
+    Bucket "1" --> "*" Release
+    Release "*" --> "*" Asset : liquidates
+    Release "*" --> "*" Account : sourceAccounts
+
+    Asset "1" --> "1" Position
+    Transaction "*" --> "0..1" Asset
+    Transaction "*" --> "0..1" Account
+    Transaction "*" --> "0..1" Bucket
+    Transaction "*" --> "0..1" Release
+    Transaction "*" --> "0..1" Budget
+
+    Budget "1" --> "*" BudgetedItem
+    Income "*" --> "*" User : taxedTo
+    Income "*" --> "0..1" Transaction : actuals
+
