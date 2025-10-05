@@ -149,19 +149,26 @@ The HTML interface contains a vertical menu bar on the left which provides links
 8. Scenarios
 
 
-## Phasing
+# Development
+The system will be developed with a clear separation of frontend, backend, and database layers. 
 
-To ensure the System will deliver value incrementally while maintaining an extensible architecture. Development will follow a phased functional release plan as shown below. This will be refined as detail is added to the requirements and use-cases. 
+### Architectural Principles
+- **Modularity**: Modular monolith design
+- **Frontend**: The user-facing web application provides an interactive interface. Probably implemented with React, Plotly.js etc
+- **Backend**: The application logic processes financial data and manages the database. Probably implemented with Python, gunicorn, uvicorn etc
+- **Database**: The persistent storage layer ensures data integrity. Probably implemented with PostgreSQL
 
-- **Phase 1** Management Functionality
-- **Phase 2** Forecasting Functionality
-- **Phase 3** Monitoring
-- **Phase 4** Analysis
-- **Phase 5** Scenarios
-- **Phase 6** AI Enhancements 
-  
-The deployment release plan is shown below
-- **Deployment 1** Ubuntu server on home network
-- **Deployment 2** Ubuntu server with public access
-- **Deployment 3** Public Cloud Service (eg AWS)
+## Development Environment
+The tools used to build and test the application locally.
+- **Code Editor**: Visual Studio Code with extensions for React, Python, and PostgreSQL.
+- **Local Backend**: uvicorn runs the Python backend locally (Flask's development server as a fallback), ensuring API responsiveness.
+- **Local Frontend**: npm run dev runs the React development server with hot-reloading, with a proxy (e.g., "http://localhost:8000") routing API calls.
+- **Testing**: pytest tests the Python backend; Jest tests the React frontend; built-in browser tools (e.g., Chrome DevTools) supplement UI testing. Linting (flake8, ESLint) and type checking (mypy, TypeScript) ensure code quality.
+- **Version Control**: Git with branching (e.g., feature/main) and a .gitignore file excluding sensitive data. The repository is publicly accessible from https://github.com/SRKershaw/Bouquet
 
+## Deployment Sequence
+
+- **Phase 1**: Local Development on PC. This phase focuses on rapid development and iteration.
+- **Phase 2**: Ubuntu Server on a Private Network. This phase introduces production practices.
+- **Phase 3**: Public Availability via Firewall. This phase secures external 
+- **Phase 4**: Migrate to a Cloud Service (AWS). This phase scales with product-market fit.
