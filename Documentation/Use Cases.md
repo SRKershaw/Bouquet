@@ -1,191 +1,242 @@
+# Use Cases.md - High-Level Use Cases for Retirement Portfolio Management System
 
-**Retirement Portfolio Management System - Use Cases**
-=====================================================================
+## Introduction
+This document specifies high-level use cases derived from the Requirements Summary in HL Requirements.md. Use cases focus on nominal (happy) paths with key alternatives for robustness, using UML activity notation for complex flows. They are grouped by subsection (e.g., Management) for traceability. Full coverage ensures extensible class definitions (Step 3). Placeholders for incomplete subsections. Initiation Pages list core entry points (evolvable during prototyping).
 
-This section outlines the high-level use-cases supported by the system. Each use-case references external and internal actors, where internal actors represent logical system responsibilities rather than specific architectural components. These references are intended to clarify behavior, not prescribe implementation.
+## Management Use Cases
+Derived from Requirements Summary - Management (items 1–10). Focus: Core data entry and setup for extensible classes (e.g., Profile, Transaction). Properties as personal (not SIPP-held); valuations via adjustments. Pension generalised to "Pension Account" with sub-types: Uncrystallised (pre-drawdown), Crystallised Drawdown (flexi-access)—UFPLS as transaction flag, not sub-account. Bucket reassignments manual but prompted by transactions. Guided prompts for subtypes in onboarding. Consolidated pages (e.g., Accounts includes Institutions/Properties/Catalogue access). Tier selectable in Settings (Basic/Premium/Advanced default). New "Deposit" and "Interest" Income categories; Tax debit for manual deduction.
 
-## Configure and Authenticate User
-**Description**: Configure users (e.g., retirees, co-owners) for portfolio access, authenticate existing users, or create the Primary User during initial setup.  
-**Actors**: User (Primary User or co-owner), System.  
-**Preconditions**: None for initial Primary User setup; user account exists for authentication or configuration.  
-**Basic Flow**:  
-- User selects the option to log in, configure users, or initialize the system.  
-- System determines the scenario based on user input and system state.  
-**Alternative Flow A: Initial Setup (No Users Exist)**:  
-- User enters Primary User details (e.g., name, authentication credentials) and assigns administrator role.  
-- System validates inputs (e.g., unique credentials).  
-- System saves Primary User with administrator permissions.  
-**Alternative Flow B: Authenticate Existing User**:  
-- User enters authentication credentials (e.g., username, password).  
-- System validates credentials.  
-- System authenticates the user.  
-**Alternative Flow C: Configure New User**:  
-- Authenticated Primary User enters new user details (e.g., name, credentials) and assigns roles (e.g., view-only, edit access to portfolio).  
-- System validates inputs (e.g., unique credentials).  
-- System saves new user configurations.  
-**Postconditions**: User is authenticated and can access the system; new users are configured with specified permissions; Primary User is created on initial setup.
+### UC-MGT-01: Register User and Create Profile
+**Description:** User registers and creates a Profile with up to two Owners (typically partners, one as primary User).  
+**Preconditions:** None.  
+**Postconditions:** Profile created with at least one Owner; extensible for joint access.  
+**Nominal Path:**  
+1. User enters email/password and personal details.  
+2. System validates and creates Profile with User as primary Owner.  
+3. System saves Profile.  
 
-## Configure an Institution
-**Description**: Configure an institution (e.g., bank, broker) for accounts.  
-**Actors**: User, System.  
-**Preconditions**: User is authenticated.  
-**Basic Flow**:  
-- User selects the option to configure an institution.  
-- User enters institution details (e.g., name, type like bank or broker).  
-- System validates inputs (e.g., non-empty name).  
-- System saves the institution.  
-**Postconditions**: Institution is available for associating with accounts.
+**Initiation Pages:** Dashboard (initial signup), Settings (post-registration edit).  
 
-## Configure an Account
-**Description**: Configure an account (e.g., bank, brokerage) to hold assets.  
-**Actors**: User, System.  
-**Preconditions**: Institution is configured; user is authenticated.  
-**Basic Flow**:  
-- User selects the option to configure an account.  
-- User specifies account details (e.g., type, institution, account number).  
-- System validates inputs (e.g., valid institution).  
-- System saves the account.  
-**Postconditions**: Account is ready for holding assets and transactions.
+**Alternatives:**  
+- Add second Owner during creation: Enter partner details; system associates both to Profile.  
+- Add second Owner post-registration: From Profile settings, select "Add Partner"; enter details and confirm shared visibility; system updates Profile.  
 
-## Configure a Bucket
-**Description**: Configure a bucket (1-4) by selecting asset positions and specifying proportions (percentage or units) to assign, with the system automatically distributing across accounts and tracking originating accounts for tax implications. For Bucket 2, optionally configure an income pipeline (a series of scheduled cash releases to Bucket 1) with releases (cash amounts with release dates from liquidated or planned-to-be-liquidated assets). For Bucket 4, optionally configure property details.  
-**Actors**: User (Primary User or co-owner with edit permissions), System.  
-**Preconditions**: Accounts and asset positions exist; user is authenticated.  
-**Basic Flow**:  
-- User selects a bucket (1, 2, 3, or 4).  
-- User selects asset positions (e.g., total shares of a stock) from the portfolio.  
-- User specifies the total proportion of each position to assign to the bucket (e.g., 50% or 100 shares).  
-- System automatically distributes the proportion across accounts holding the asset (e.g., proportional to account holdings or prioritizing tax-advantaged accounts), displaying the proposed account breakdown for confirmation or adjustment.  
-- For Bucket 2 (optional): User configures an income pipeline by specifying a cash amount and a release date for each release, referencing a liquidated or planned-to-be-liquidated asset; for bonds, the system validates that the release date is on or after the liquidation date, which must be at or after the bond’s maturity date.  
-- For Bucket 4 (optional): User enters property valuation and rental income manually.  
-- System validates inputs (e.g., positions exist, proportions do not exceed position totals, accounts are valid, bond release dates are valid relative to liquidation/maturity dates).  
-- System saves the bucket configuration, linking each holding’s proportion to its originating account and each release to its liquidation source for tax purposes, and updates the cashflow forecast.  
-**Postconditions**: Bucket is configured with account-linked holdings, integrated into cashflow, and ready for tax-aware analysis or transactions; Bucket 2 includes income pipeline releases if configured, linked to liquidation sources.
+**UML Activity (Post-Registration Addition):**  
+[Start] → [Select Add Partner] → [Enter Details] → [Decision: Valid?] → [Yes: Update Profile] → [End] / [No: Error & Retry]  
 
-## Configure a Budget
-**Description**: Create a budget for spending categories (recurring or itemised) with budgeted items, ensuring sufficient cash in Bucket 1 for current-year spending and Bucket 2 releases for future years.  
-**Actors**: User, System.  
-**Preconditions**: User is authenticated.  
-**Basic Flow**:  
-- User selects the option to create a budget.  
-- User specifies the budget category (e.g., Everyday, Major Purchases) and type (recurrent or itemised).  
-- User enters details (e.g., annual amount and inflation adjustment for recurrent, cost and date range for itemised).  
-- User adds budgeted items (e.g., "Groceries" as recurring, "New Car" as non-recurring), specifying name, amount, start/end dates (mandatory), and optional inflation rate override (defaults to system rate).  
-- System validates inputs (e.g., positive amounts, valid dates).  
-- System saves the budget, including budgeted items, and updates the cashflow forecast with inflation-adjusted projections.  
-**Postconditions**: Budget is tracked against spending, with items ensuring liability coverage in Bucket 1 and future releases.
+### UC-MGT-02: Create Institution
+**Description:** User creates an Institution (e.g., bank/brokerage) as a provider for Accounts (prerequisite for UC-MGT-04).  
+**Preconditions:** Profile exists.  
+**Postconditions:** Institution added to system registry, linkable to Accounts.  
+**Nominal Path:**  
+1. User enters Institution details (e.g., name, type: Bank/Brokerage).  
+2. System validates (e.g., uniqueness).  
+3. System saves Institution.  
 
-## Add an Asset to Catalogue
-**Description**: Add an asset (e.g., security, property, cash) to the portfolio’s catalogue for use in transactions and bucket configurations.  
-**Actors**: User (Primary User or co-owner with edit permissions), System.  
-**Preconditions**: User is authenticated. 
-**Postconditions**: Asset is available for transactions and bucket configurations.    
-**Basic Flow**:  
-- User selects the option to add an asset.  
-- User enters asset details (e.g., type, name, ticker for securities, valuation for property, maturity date for bonds).  
-- System validates inputs (e.g., unique ticker for securities using external market data, positive valuation for property, valid maturity date for bonds).  
-- System adds the asset to the catalogue.  
+**Initiation Pages:** Accounts (inline during account creation).  
 
+**Alternatives:**  
+Select from curated list: Search/filter known providers (e.g., Hargreaves Lansdown); system auto-creates if not found.  
 
-## Create a Transaction
-**Description**: Record a transaction (e.g., purchase, sale, income) with double-entry, associating dividends/coupons with releases if applicable.  
-**Actors**: User, System.  
-**Preconditions**: Accounts and assets exist; user is authenticated. 
-**Postconditions**: Portfolio is updated with audit trail; allocations refreshed.    
-**Basic Flow**:  
-- User selects the option to create a transaction.  
-- User specifies transaction type (e.g., purchase, sale, transfer).  
-- User enters details (e.g., date, amount, asset, account, bucket, fees, taxes, ReleaseId for dividends/coupons).  
-- System validates inputs (e.g., sufficient funds, no negative balances, ownership consistency, FX rates).  
-- System records the transaction using a double-entry structure, updates balances/logs, and auto-associates dividends/coupons to Release via asset match if ReleaseId provided.  
-- System logs the transaction with a unique identifier and versioned history.  
+**UML Activity (Creation Flow):**  
+[Start] → [Enter/Select Details] → [Decision: Unique/Valid?] → [Yes: Save] → [End] / [No: Alert & Retry]  
 
+### UC-MGT-03: Add Assets to Catalogue
+**Description:** User adds Assets (e.g., securities like stocks, ETFs) to the Catalogue via ticker/ID for later brokerage transactions (precondition for buys).  
+**Preconditions:** Profile exists.  
+**Postconditions:** Asset added to Catalogue with validation/enrichment.  
+**Nominal Path:**  
+1. User enters ticker/ID (e.g., VUSA.L for ETF).  
+2. System validates (stubbed external API, e.g., yfinance) and enriches (name, sector—freeform text override).  
+3. System saves to Catalogue (non-transactional, editable if unused).  
 
-## Manage Bucket Assignments
-**Description**: Assign, unassign, or transfer units between buckets.  
-**Actors**: User, System.  
-**Preconditions**: Buckets and assets exist; user is authenticated.   
-**Postconditions**: Buckets reflect new assignments.     
-**Basic Flow**:  
-- User selects action (assign, unassign, or transfer) and specifies source/destination buckets and units.  
-- System validates inputs (e.g., sufficient units).  
-- System updates holdings as a transaction with double-entry structure.  
-- System logs the transaction.  
+**Initiation Pages:** Securities, Accounts (inline for brokerage).  
 
+**Alternatives:**  
+Edit: Update unused Asset (e.g., correct name); non-deletable post-transaction for traceability.  
+Bulk (Deferred): CSV import for multiple (single-asset for MVP).  
 
-## View Holdings and Positions
-**Description**: List portfolio positions or holdings with flexible scope (e.g., portfolio summary, account holdings, bucket holdings, account-linked bucket holdings for tax implications).  
-**Actors**: User (Primary User or co-owner with view permissions), System.  
-**Preconditions**: Portfolio has data; user is authenticated.  
-**Basic Flow**:  
-- User selects the option to view holdings or positions.  
-- User specifies the scope (e.g., all portfolio positions, holdings in an account, holdings in a bucket, bucket holdings linked to a specific account for tax purposes).  
-- System retrieves data from transaction history and market data (e.g., yfinance), including account origins for bucket holdings.  
-- System displays results (e.g., asset, quantity, value, originating account for tax implications).  
-**Postconditions**: User views the requested portfolio information, including tax-relevant data.
+### UC-MGT-04: Create Accounts
+**Description:** User creates Accounts at Institutions (e.g., Bank/Pension), owned by one or both Owners; sub-types for Bank (Current/Deposit), Brokerage (Trading/ISA/Pension: Uncrystallised/Crystallised Drawdown). Guided prompts for selection; overlaps with Institutions/Properties/Catalogue.  
+**Preconditions:** Profile and Institution exist (via UC-MGT-02).  
+**Postconditions:** Account added to Profile with ownership and sub-type recorded.  
+**Nominal Path:**  
+1. User selects existing or creates new Institution (invoke UC-MGT-02 if needed).  
+2. User selects Account type (e.g., Brokerage) and sub-type (guided prompt: "Trading for general or ISA for tax-free?").  
+3. User enters details (e.g., account number).  
+4. System assigns ownership (default: primary Owner).  
+5. System saves Account linked to Institution.  
 
-## Define Guardrails
-**Description**: Set thresholds for alerts (e.g., cash shortfalls, replenishment needs).  
-**Actors**: User, System.  
-**Preconditions**: Buckets and budgets are configured; user is authenticated.  
-**Basic Flow**:  
-- User selects the option to define guardrails.  
-- User defines rules (e.g., Bucket 1 below £5,000 triggers red alert).  
-- System validates inputs (e.g., valid thresholds).  
-- System saves guardrails.  
-**Postconditions**: Guardrails are active for monitoring.
+**Initiation Pages:** Accounts (primary), Dashboard (quick add).  
 
-## Project External Income
-**Description**: Add projections for income (e.g., pension, rental), linked to users for tax purposes.  
-**Actors**: User, System.  
-**Preconditions**: User is authenticated.  
-**Basic Flow**:  
-- User selects the option to add external income.  
-- User enters income type, amount, dates, optional inflation adjustment, and links to users for tax.  
-- System validates inputs (e.g., positive amounts).  
-- System saves projection and updates cashflow forecast.  
-**Postconditions**: Income is integrated into cashflow, linked to users.
+**Alternatives:**  
+Joint ownership: Select both Owners during step 4; system records shared flag.  
+Inline Overlaps: On Accounts page, create Institution/Properties/Catalogue access (e.g., add security from Catalogue to new brokerage).  
+Transaction Creation: From Accounts page, select account → add transaction (e.g., buy from Catalogue security).  
 
-## Generate Cashflow Forecast
-**Description**: Calculate rolling forecast from buckets, budgets, and income, applying portfolio rules (e.g., SIPP drawdown placeholder).  
-**Actors**: User, System.  
-**Preconditions**: Data is configured; user is authenticated.  
-**Basic Flow**:  
-- User requests a cashflow forecast for a period.  
-- System computes forecast using Bucket 1 cash, inflation-adjusted budget items, and income.  
-- System applies portfolio rules (e.g., SIPP drawdown placeholder for tax).  
-- System displays results (e.g., shortfalls, pipeline needs).  
-**Postconditions**: Forecast is available for decisions.
+### UC-MGT-05: Input Transactions (Expanded for Comprehensive Types)
+**Description**: User inputs Transactions with double-entry, supporting all types (credits/debits, buys/sells, transfers, fees, adjustments); categorized for income/budgets ("Deposit", "Interest" for Income; Tax for debits with manual deduction). Multi-currency/FX, UK-specific (Pension/CGT). Extensible to APIs. Transactions prompt bucket reassignments; pension-specific flags for UFPLS/crystallisation. MPAA/LSA totals queried from history. Source/destination distinguished per type.  
+**Preconditions:** Profile and relevant Account exist; Assets in Catalogue for buys.  
+**Postconditions:** Balances updated; versioned log created; projections/alerts triggered; prompted bucket reassignment if applicable; tracker totals updated via query.  
+**Nominal Path (Generic):**  
+1. User selects Account, type (credit/debit/buy/sell/transfer/fee/adjustment).  
+2. User enters details (amount, currency/FX if multi, category, fees/tax; source/destination per type).  
+3. System applies double-entry (e.g., debit source, credit destination; CGT pooling for sells).  
+4. System validates (e.g., MPAA for Pension draws), versions, and saves.  
+5. If liquidation (e.g., Bucket 2 sell), system prompts reassignment (invoke UC-MGT-07).  
 
-## Generate and View Alerts
-**Description**: System generates alerts based on guardrails.  
-**Actors**: User, System.  
-**Preconditions**: Guardrails are defined; user is authenticated.  
-**Basic Flow**:  
-- System monitors buckets, budgets, and assets against guardrails.  
-- System detects a condition (e.g., Bucket 1 shortfall).  
-- System generates an alert (green, amber, red, purple) with details.  
-- User views and acknowledges the alert.  
-**Postconditions**: Alert is logged.
+**Initiation Pages:** Catalogue, Accounts, Portfolio, Transactions.  
 
-## Run Portfolio Analysis
-**Description**: Analyze performance (returns, risks, tax; with potential AI).  
-**Actors**: User, System.  
-**Preconditions**: Transactions and market data exist; user is authenticated.  
-**Basic Flow**:  
-- User selects analysis type (e.g., returns, risk, tax estimate).  
-- System retrieves data (e.g., yfinance) and computes metrics.  
-- System displays results.  
-**Postconditions**: Analysis informs planning.
+**Sub-Use Cases (Types):**  
+- **Credit (Inflow)**: Align with income categories (e.g., "Deposit" for initial cash, "Interest" for cash yields, State Pension—regular, auto-inflation; inheritance—ad-hoc). Nominal: Enter amount/category; credit Destination Account (no source—external). Alternative: Pension drawdown (flag "UFPLS Withdrawal" or "Crystallised Withdrawal", specify liquidated units; 25% tax-free if applicable).  
+- **Debit (Outflow)**: Align with budget categories (e.g., Everyday—recurrent; Tax—manual amount deducted from Source Account cash—no destination—external). Nominal: Enter amount/category; debit Source Account. Alternative: Split (e.g., partial to Emergency).  
+- **Buy/Sell Securities**: With unit price/quantity, fees (fixed/%); CGT on average basis. Nominal: Buy (debit cash from Account, credit Holding—same source/destination); Sell (reverse, calc gain/loss). Alternative: Multi-currency (e.g., USD ETF—apply FX rate).  
+- **Transfer Between Accounts/Buckets**: Internal (e.g., Bank to Pension—no fee) or external (e.g., in-specie £60 fee). Nominal: Select source/destination; transfer Units/cash. Alternative: Bucket shift (e.g., 3 to 2—validate LDI); hybrid flows (e.g., UFPLS Withdrawal from Uncrystallised, then partial Crystallisation transfer to Drawdown sub-type—validate MPAA); phased pension liquidations (e.g., UFPLS partial to Crystallised Drawdown sub-type).  
+- **Record Fees**: AUM/transaction/platform (e.g., 0.45% Pension). Nominal: Deduct from Destination Account cash (no source). Alternative: Recurring (link to Settings).  
+- **Asset Adjustment (e.g., Property Valuation Update)**: Non-cash revision for personal Assets (e.g., reappraisal). Nominal: Select Asset (e.g., Bucket 4 Property); enter new value/date; system updates Holding (no double-entry). Alternative: Auto-suggest from growth rate; version for audit.  
 
-## Run Scenario Tests
-**Description**: Model alternatives (e.g., stress tests, strategies) using Scenario portfolios.  
-**Actors**: User, System.  
-**Preconditions**: Active portfolio exists; user is authenticated.  
-**Basic Flow**:  
-- User selects the Active portfolio and baseDate for snapshot.  
-- System creates Scenario portfolio, cloning aggregated account categories (by owner/type) and bucket assignments at baseDate, setting snapshotValue.  
-- User modifies Scenario portfolio (e.g., adjust allocations, rules).  
-- System normalizes balances to user-selected comparison date using inflation/growth rates.  
-- System runs simulation and displays outcomes.  
-**Postconditions**: User evaluates scenarios, with comparable reports to Active portfolio.
+**Alternatives (Generic):**  
+API import: Stub validation (parse payload, match Account/category); apply if valid. Recategorize: Post-save edit with changelog (query updates tracker totals).  
+
+**UML Activity (Generic Double-Entry):**  
+[Start] → [Select Type] → [Decision Diamond: Type?] → [Credit: Destination only] / [Debit: Source only] / [Buy/Sell: Same Account] / [Transfer: Source/Destination] / [Fee: Destination only] → [Enter Details] → [Apply Debit/Credit + Cat/Tax] → [Decision: Valid/Balanced?] → [Yes: Version & Trigger Projections/Prompt Reassign] → [End] / [No: Alert & Edit]  
+
+### UC-MGT-06: Assign Units to Buckets
+**Description:** User assigns Units from Accounts to Buckets (1: Cash, 2: Pipeline, 3: Growth); Bucket 2 supports Release dates.  
+**Preconditions:** Account with Units exists.  
+**Postconditions:** Holding created in Bucket; validated for strategy.  
+**Nominal Path:**  
+1. User selects Units and target Bucket.  
+2. System moves Units to Holding.  
+3. If Bucket 2: User sets Release date.  
+4. System validates (e.g., non-overlapping dates) and saves.  
+
+**Initiation Pages:** Buckets, Accounts, Portfolio.  
+
+**Alternatives:**  
+Reassignment: Select existing Holding; update Bucket (validate no LDI conflicts).  
+Prompted from Transaction: Post-liquidation (e.g., Bucket 2 sell), system alerts "Reassign proceeds to Bucket 1?"; user confirms manual shift.  
+Phased for Pensions: Partial drawdown/UFPLS (e.g., 25% tax-free from uncrystallised); reassign only crystallised portion to Bucket 1 drawdown Account.  
+
+### UC-MGT-07: Record Properties in Bucket 4
+**Description:** User records personal Properties (e.g., rental home, not SIPP-held) in Bucket 4 with value, optional rental income, and disposal date; invoke adjustment for updates.  
+**Preconditions:** Profile exists.  
+**Postconditions:** Property added as Asset in Bucket 4; initial valuation set.  
+**Nominal Path:**  
+1. User enters Property details (e.g., address, initial value).  
+2. Optionally: Set rental income schedule and disposal date.  
+3. System invokes UC-MGT-05 for valuation confirmation and saves as Property Holding.  
+
+**Initiation Pages:** Accounts, Buckets.  
+
+**Alternatives:**  
+Update: Edit existing (e.g., invoke UC-MGT-05 for reappraisal, adjust income for inflation).  
+
+### UC-MGT-08: Create Budget Categories
+**Description:** User creates Budget categories (defaults: "General", "Tax"); add custom (e.g., "Emergency").  
+**Preconditions:** Profile exists.  
+**Postconditions:** Budget category added to Profile.  
+**Nominal Path:**  
+1. User selects "Create Budget".  
+2. User names category (or accepts default).  
+3. System saves and links to Liabilities.  
+
+**Initiation Pages:** Budgets, Dashboard.  
+
+**Alternatives:**  
+Custom: Specify period (e.g., annual) during step 2.  
+
+### UC-MGT-09: Create Recurrent or Dated Items in Budgets
+**Description:** User adds items to Budgets (e.g., monthly spending or one-off liability).  
+**Preconditions:** Budget category exists.  
+**Postconditions:** Liability item added, indexed for inflation if flagged.  
+**Nominal Path:**  
+1. User selects Budget and item type (recurrent/dated).  
+2. User enters amount, date/period, and optional inflation index.  
+3. System calculates projections and saves.  
+
+**Initiation Pages:** Budgets, Income.  
+
+**Alternatives:**  
+Edit: Update existing item (e.g., adjust for lifestyle changes).  
+
+### UC-MGT-10: Define External Sources of Income
+**Description:** User defines Income sources (regular e.g., State Pension; ad-hoc e.g., inheritance); categories for credits ("Deposit" for initial cash, "Interest" for cash yields).  
+**Preconditions:** Profile exists.  
+**Postconditions:** Income source added, projected into forecasts.  
+**Nominal Path:**  
+1. User selects type (regular/ad-hoc) and category (e.g., "Deposit", "Interest", Pension, Rental).  
+2. User enters details (e.g., amount, start date).  
+3. System saves and adjusts for inflation if regular.  
+
+**Initiation Pages:** Income, Budgets.  
+
+**Alternatives:**  
+Blend dated ad-hoc with regulars: Add one-off (e.g., £50k inheritance in 2027) to existing stream; system merges for net projections.  
+
+### UC-MGT-11: Define Portfolio Settings
+**Description:** User defines settings (e.g., RPI rate, pension drawdown strategy); includes Profile edits (Owners/tiers—user-selectable Basic/Premium/Advanced).  
+**Preconditions:** Profile exists.  
+**Postconditions:** Settings updated in Profile; logged with rollback option.  
+**Nominal Path:**  
+1. User navigates to Settings.  
+2. User edits values (e.g., growth rate 5%, tier selection).  
+3. System validates and saves (log change).  
+
+**Initiation Pages:** Settings, Dashboard.  
+
+**Alternatives:**  
+Defaults: Load system presets (e.g., current RPI) on first access.  
+Rollback: User selects "Revert" for logged change (e.g., tier to Basic).  
+
+### UC-MGT-12: View Dashboards
+**Description:** User views dashboards for Portfolio, Accounts, Assets, Buckets, and Budgets; includes Pension Access Summary (running MPAA/LSA).  
+**Preconditions:** Profile with data exists.  
+**Postconditions:** Data displayed; no changes.  
+**Nominal Path:**  
+1. User accesses landing dashboard.  
+2. System aggregates and displays values (e.g., total Portfolio £X, Pension totals queried from history).  
+3. User drills down if needed.  
+
+**Initiation Pages:** Dashboard (landing).  
+
+**Alternatives:**  
+Simplified default view: High-level summaries (e.g., bucket balances only) for new users.  
+
+## Forecasting Use Cases
+[Placeholder - To be derived next; will include incremental refreshes using rules-engine for macro Bucket 3 growth scenarios (time/growth/budget-based), assuming rebalancing per rules; tax-inclusive (e.g., PAYE/CGT).]
+
+### UC-FCT-01: View Portfolio Forecasts
+**Description:** [TBD - Derived from item 1]
+
+... [Similar placeholders for UC-FCT-02 to UC-FCT-08]
+
+## Monitoring Use Cases
+[Placeholder - To be derived; will tie to prompted reassignments from transactions and MPAA alerts.]
+
+### UC-MON-01: Alert on Bucket 1 Cash Shortfall
+**Description:** [TBD - Derived from item 1]
+
+... [Similar placeholders for UC-MON-02 to UC-MON-10]
+
+## Analysis Use Cases
+[Placeholder - To be derived.]
+
+### UC-ANL-01: View Portfolio Performance Analysis
+**Description:** [TBD - Derived from item 1]
+
+... [Similar placeholders for UC-ANL-02 to UC-ANL-05]
+
+## Scenarios Use Cases
+[Placeholder - To be derived; includes "What-If UFPLS" previews for MPAA/LSA simulations.]
+
+### UC-SCN-01: Define and Analyse Scenarios
+**Description:** [TBD - Derived from item 1; includes macro simulations with rules assumptions.]
+
+## Operational Use Cases
+[Placeholder - Non-functional; cross-cutting.]
+
+## Interface Use Cases
+[Placeholder - To be derived from Interface subsection; core pages: Dashboard, Settings (incl. Profile), Accounts (incl. Institutions/Properties/Catalogue access), Transactions, Buckets, Budgets, Income, Portfolio (sortable), Securities (Catalogue), Scenarios.]
+
+*Traceability: UC-XXX-XX links to requirement items. Derived for class robustness. Pensions generalised; buckets prompted on transactions; MPAA/LSA queried from logs. Initiation Pages evolvable. Full expansion post-Management review.*

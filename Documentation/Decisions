@@ -1,0 +1,33 @@
+# Project Decisions Summary - Retirement Portfolio Management System
+
+## Introduction
+This document summarises all key decisions made during the development process for the Retirement Portfolio Management System, based on the hybrid agile-waterfall approach. Decisions are grouped by step/topic for traceability, drawing from refinements to HL Requirements.md, Use Cases.md, Class-defs.md, and discussions on scenarios/interface. The focus is on extensibility for the prototype (Management use cases) while supporting full requirements (e.g., Forecasting, Monitoring). Date: October 09, 2025. This summary ensures the design is robust without kludges, with deferred items noted for later phases.
+
+## Step 1: HL Requirements Refinement
+- **Overview Section**: Hybrid Bucket-LDI strategy complete; alerts triggered by user-defined rules (cashflow risk, pipeline length); LDI examples (bond maturity) deferred unless architecture impact.
+- **Terminology**: Bucket cash in 2/3 distinct from Bucket 1 liquid cash; "Pension Account" generalisation for SIPP/Workplace (sub-types: Uncrystallised pre-drawdown, Crystallised Drawdown flexi-access; UFPLS as transaction flag, not sub-account). Added Catalogue as item 26 ("group of Assets selected by User whose Units can be added to brokerage account using Transaction").
+- **Management Subsection**: Single Profile for joint ownership (up to 2 Owners, shared visibility); manual transactions extensible to APIs; bucket assignments with release dates; budgets with defaults ("General", "Tax"); external income with "Deposit" (initial cash) and "Interest" (cash yields) categories; portfolio Settings (RPI, growth rates, pension drawdown strategy).
+- **Forecasting Subsection**: Incremental refreshes post-transaction; macro Bucket 3 growth scenarios (time/growth/budget-based) via rules-engine assumptions (no explicit bucket simulation); tax-inclusive (manual PAYE/CGT entry).
+- **Monitoring Subsection**: Prompted manual reassignments for bucket updates post-transaction (e.g., liquidation alert "Reassign to Bucket 1?"); Pension withdrawal alerts with defaults (MPAA £10k); explicit save for scenarios, auto-save with rollback for main.
+- **Scenarios Subsection**: Selective replication (assets, income, budgets, bucket assignments, settings, rules) from main/other; consolidated Scenario page with contextual tabs mirroring main (e.g., "Bucket Rules" tab); account-based replication default (structure for pension accuracy), bucket tweaks option; explicit save for scenarios, auto-save for main; deep copy for independence.
+- **Operational Subsection**: Expanded logging for settings/Profile changes with rollback option; GDPR/FCA compliance for tier/joint data.
+- **Interface Subsection**: Consolidated pages (Dashboard, Settings [incl. Profile], Accounts [incl. Institutions/Properties/Catalogue access], Transactions, Buckets, Budgets, Income, Portfolio [sortable assets], Securities [Catalogue], Scenarios); evolvable during prototyping; initiation pages per use case (e.g., UC-MGT-04 from Catalogue, Accounts, Portfolio, Transactions).
+- **Deferred**: Means-tested benefits, LDI examples, threshold types, severity levels, inflation thresholds, unsustainable patterns, dashboard integration, asset unit previews, bulk CSV for Catalogue, UI prompts, navigation sub-use case, Catalogue enrichment.
+
+## Step 2: Use Cases Derivation
+- **Management Use Cases**: Complete with 12 cases (UC-MGT-01 to UC-MGT-12); renumbered for Catalogue (UC-MGT-03); initiation pages added (e.g., UC-MGT-04: Catalogue, Accounts, Portfolio, Transactions); transaction expansions (source/destination logic, "Deposit"/"Interest" categories, Tax debit deduction, pension flags as transfers); overlaps (e.g., Institution in Accounts page); edits as alternatives (e.g., UC-MGT-03 for account edits); explicit save for scenarios, auto-save for main.
+- **Other Subsections**: Placeholders for Forecasting (incremental refreshes, tax-inclusive), Monitoring (prompted reassignments), Analysis, Scenarios (selective copy, tabs for contextual rules, modes FullCopy/Selective), Operational, Interface (core pages evolvable).
+- **Deferred**: Full UI prompts for new user setup, navigation sub-use case.
+
+## Step 3: Class Definitions
+- **Core User**: Merged Profile with credentials (email/password, authenticate()), tier enum, systemSettings Map (account-level, no portfolio settings/rules), owners List<Owner> (up to 2), changeLog for rollback, portfolios List<Portfolio>, catalogue 1:1. Owner with portfolio association.
+- **Portfolio**: Central aggregator (Active/Scenario enum, accounts/buckets List, accountCategories Map<Owner, AccountType, Decimal>, rulesSettings 1:1, baseDate/snapshotValue for cloning, clone() method).
+- **RulesSettings**: Independent composite (name/description for dropdown, versionId, settings Map<String, Decimal>, rules List<Rule>, portfolios List<Portfolio> 1:* , cloneFrom() for deep copy replication).
+- **Rule**: Parameterised (type, expression, parameters Map).
+- **Account Management**: Institution with accounts List. Account polymorphic base (type AccountType enum: Bank/Brokerage, subType String, owners List, balance). BankAccount (interestRate, isCurrent). BrokerageAccount (holdings List, getTaxWrapper()). PensionAccount (phase String, mpaaUsed/lsaUsed Decimal, validateWithdrawal()).
+- **Catalogue and Asset**: Catalogue 1:1 Profile (assets List<Asset> loose association, addAsset(), editAsset(), isDeletable()). Asset base (type AssetType enum: Cash/Security/Property, ticker, currentPrice). Holding (asset/account/bucket association, quantity/value, updateValue()). Property sub-type (address, rentalIncomeSchedule List, disposalDate).
+- **Income and Budget**: IncomeSource (type, category, amount/startDate, isInflationAdjusted, profile association). Budget (name, period Enum, liabilities List, isInflationAdjusted). Liability (amount/date, isRecurrent, budget association).
+- **Transaction and Category**: Transaction polymorphic (type TransactionType enum, amount/currency, sourceAccount/destinationAccount optional, category, fees/tax, timestamp/flag/versionId, applyDoubleEntry(), queryTrackerTotal()). Category (name, type CategoryType enum: Income/Debit, isInflationAdjusted, deductFromCash for Tax).
+- **Deferred**: Bulk CSV for Catalogue, Catalogue enrichment fields.
+
+*Traceability: Classes map to Management use cases (e.g., Transaction to UC-MGT-04). Extensible for Forecasting (e.g., Projection queries Transaction logs). Full Classes.mmd in Mermaid post-validation.*
